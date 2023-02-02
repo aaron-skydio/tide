@@ -1,15 +1,20 @@
 function _tide_item_git
     if git branch --show-current 2>/dev/null | string shorten -"$tide_git_truncation_strategy"m$tide_git_truncation_length | read -l location
         git rev-parse --git-dir --is-inside-git-dir | read -fL gdir in_gdir
-        set location $_tide_location_color$location
+        set _default_git_branches master main
+        if contains $location $_default_git_branches
+            set location $_tide_location_color$tide_git_glyph_branch
+        else
+            set location $_tide_location_color$tide_git_glyph_branch' '$location
+        end
     else if test $pipestatus[1] != 0
         return
     else if git tag --points-at HEAD | string shorten -"$tide_git_truncation_strategy"m$tide_git_truncation_length | read location
         git rev-parse --git-dir --is-inside-git-dir | read -fL gdir in_gdir
-        set location '#'$_tide_location_color$location
+        set location $_tide_location_color$tide_git_glyph_tag' '$location
     else
         git rev-parse --git-dir --is-inside-git-dir --short HEAD | read -fL gdir in_gdir location
-        set location @$_tide_location_color$location
+        set location $_tide_location_color$tide_git_glyph_detached' '$location
     end
 
     # Operation
@@ -55,18 +60,18 @@ function _tide_item_git
         string match -r '^\?\?' $stat | count
         git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null)"
 
-    if test -n "$operation$conflicted"
-        set -g tide_git_bg_color $tide_git_bg_color_urgent
-    else if test -n "$staged$dirty$untracked"
-        set -g tide_git_bg_color $tide_git_bg_color_unstable
-    end
+    # if test -n "$operation$conflicted"
+    #     set -g tide_git_bg_color $tide_git_bg_color_urgent
+    # else if test -n "$staged$dirty$untracked"
+    #     set -g tide_git_bg_color $tide_git_bg_color_unstable
+    # end
 
     _tide_print_item git $_tide_location_color$tide_git_icon' ' (set_color white; echo -ns $location
         set_color $tide_git_color_operation; echo -ns ' '$operation ' '$step/$total_steps
-        set_color $tide_git_color_upstream; echo -ns ' ⇣'$behind ' ⇡'$ahead
-        set_color $tide_git_color_stash; echo -ns ' *'$stash
-        set_color $tide_git_color_conflicted; echo -ns ' ~'$conflicted
-        set_color $tide_git_color_staged; echo -ns ' +'$staged
-        set_color $tide_git_color_dirty; echo -ns ' !'$dirty
-        set_color $tide_git_color_untracked; echo -ns ' ?'$untracked)
+        set_color $tide_git_color_conflicted; echo -ns ' '$tide_git_glyph_conflicted$conflicted
+        set_color $tide_git_color_staged; echo -ns ' '$tide_git_glyph_staged$staged
+        set_color $tide_git_color_dirty; echo -ns ' '$tide_git_glyph_dirty$dirty
+        set_color $tide_git_color_untracked; echo -ns ' '$tide_git_glyph_untracked$untracked
+        set_color $tide_git_color_upstream; echo -ns ' '$tide_git_glyph_ahead$ahead ' '$tide_git_glyph_behind$behind
+        set_color $tide_git_color_stash; echo -ns ' '$tide_git_glyph_stash$stash)
 end
